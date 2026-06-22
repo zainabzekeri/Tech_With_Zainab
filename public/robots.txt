@@ -1,0 +1,6 @@
+# Robots.txt for TechWithZainab
+User-agent: *
+Allow: /
+
+# Sitemap Location
+Sitemap: https://techwithzainab.com/sitemap.xml

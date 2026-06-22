@@ -1,0 +1,6 @@
+{
+  "name": "TechWithZainab",
+  "description": "TechWithZainab is a beginner-friendly platform helping aspiring tech learners gain digital skills, discover freelancing, find remote jobs, and learn useful digital tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
