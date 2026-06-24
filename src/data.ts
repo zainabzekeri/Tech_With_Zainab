@@ -1,6 +1,6 @@
 import { BlogPost, JobOpportunity, FAQItem, ReviewItem } from './types';
 
-const zainabPortrait = "https://i.ibb.co/6cYqLwyH/Zainab-s-image4.jpg";
+import zainabPortrait from "./assets/images/zainab-founder.jpg";
 
 export const FOUNDER_INFO = {
   name: "Zainab",
