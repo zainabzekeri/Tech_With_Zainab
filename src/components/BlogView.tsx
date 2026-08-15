@@ -1,51 +1,197 @@
-import { useState, useMemo, FormEvent } from 'react';
+import { useState, useMemo, useEffect, FormEvent } from 'react';
 import { Search, Compass, BookOpen, Clock, ArrowRight, User, Calendar, Tag, ArrowLeft, Mail, ShieldAlert } from 'lucide-react';
-import { BLOG_POSTS } from '../data';
 import { BlogPost, CategoryType } from '../types';
 import AdSensePlaceholder from './AdSensePlaceholder';
+import { client } from '../lib/sanity';
+import { POSTS_QUERY } from '../lib/queries';
+import { PortableText, PortableTextComponents } from '@portabletext/react';
+const portableTextComponents: PortableTextComponents = {
+  types: {
+    youtube: ({ value }) => {
+      if (!value?.url) return null;
+
+      const getYouTubeId = (url: string) => {
+        try {
+          const parsedUrl = new URL(url);
+
+          if (parsedUrl.hostname.includes('youtu.be')) {
+            return parsedUrl.pathname.slice(1);
+          }
+
+          if (parsedUrl.hostname.includes('youtube.com')) {
+            return parsedUrl.searchParams.get('v');
+          }
+
+          return null;
+        } catch {
+          return null;
+        }
+      };
+
+      const videoId = getYouTubeId(value.url);
+
+      if (!videoId) {
+        return (
+          <div className="my-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            Invalid YouTube URL.
+          </div>
+        );
+      }
+
+      return (
+        <div className="my-8">
+          {value.title && (
+            <h3 className="mb-3 text-lg font-extrabold text-[#1F2A44]">
+              {value.title}
+            </h3>
+          )}
+
+          <div className="relative aspect-video overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+            <iframe
+              className="absolute inset-0 h-full w-full"
+              src={`https://www.youtube.com/embed/${videoId}`}
+              title={value.title || 'YouTube video'}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      );
+    },
+  },
+};
 
 interface BlogViewProps {
   onReadBlogPost: (post: BlogPost) => void;
-  activePost: BlogPost | null;
+  post: BlogPost | null;
   onClosePost: () => void;
 }
 
-export default function BlogView({ onReadBlogPost, activePost, onClosePost }: BlogViewProps) {
+export default function BlogView({ onReadBlogPost, post, onClosePost }: BlogViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | 'All'>('All');
   const [emailSub, setEmailSub] = useState('');
   const [subDone, setSubDone] = useState(false);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
 
   const categories: (CategoryType | 'All')[] = ['All', 'Tech Skills', 'Freelancing', 'Remote Jobs', 'Digital Tools'];
 
   const filteredPosts = useMemo(() => {
-    return BLOG_POSTS.filter((post) => {
-      const matchesCategory = selectedCategory === 'All' || post.category === selectedCategory;
-      const matchesSearch = 
-        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesCategory && matchesSearch;
-    });
-  }, [selectedCategory, searchQuery]);
+  return posts.filter((post) => {
+    const matchesCategory =
+  selectedCategory.toLowerCase() === "all" ||
+  post.category?.trim().toLowerCase() === selectedCategory.trim().toLowerCase();
 
-  const recentPosts = useMemo(() => {
-    return BLOG_POSTS.slice(0, 3);
-  }, []);
+    const matchesSearch =
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (post.excerpt || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.tags.some((tag) =>
+        tag.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
-  const handleSubscribe = (e: FormEvent) => {
-    e.preventDefault();
-    if (emailSub && emailSub.includes('@')) {
-      setSubDone(true);
-      setEmailSub('');
-      setTimeout(() => setSubDone(false), 5000);
+    return matchesCategory && matchesSearch;
+  });
+}, [posts, selectedCategory, searchQuery]);
+
+  useEffect(() => {
+  console.log("useEffect started");
+
+  async function fetchPosts() {
+    console.log("fetchPosts started");
+
+    try {
+      const data = await client.fetch(POSTS_QUERY);
+
+      console.log("Sanity data:", data);
+
+      setPosts(
+  data.map((post: any) => ({
+    id: post._id,
+    title: post.title,
+    excerpt: post.excerpt || "",
+    content: post.body,
+
+    downloadResource: post.downloadResource
+      ? {
+          title: post.downloadResource.title || "",
+          description: post.downloadResource.description || "",
+          url: post.downloadResource.url || "",
+        }
+      : null,
+
+    image: post.featuredImage?.asset?.url || "",
+          category: post.category?.trim() || "General",
+          date: post.publishedAt
+            ? new Date(post.publishedAt).toLocaleDateString()
+            : "",
+          readTime: post.readingTime || "5 min read",
+          tags: post.tags || [],
+          author: post.author || "TechWithZainab",
+          authorImage: post.authorImage || "",
+          relatedPosts: post.relatedPosts || [],
+          isFeatured: post.isFeatured || false,
+        }))
+      );
+
+    } catch (error) {
+      console.error("Sanity Error:", error);
     }
-  };
+  }
+
+  fetchPosts();
+}, []);
+  const recentPosts = useMemo(() => {
+  return posts.slice(0, 3);
+}, [posts]);
+
+const featuredPosts = useMemo(() => {
+  return posts.filter((post) => post.isFeatured);
+}, [posts]);
+
+  const handleSubscribe = async (e: FormEvent) => {
+  e.preventDefault();
+
+  if (!emailSub || !emailSub.includes('@')) {
+    return;
+  }
+
+  try {
+    const response = await fetch('/.netlify/functions/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: emailSub,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Subscription failed');
+    }
+
+    setSubDone(true);
+    setEmailSub('');
+
+    setTimeout(() => {
+      setSubDone(false);
+    }, 5000);
+  } catch (error) {
+    console.error('Newsletter subscription error:', error);
+    alert('Sorry, we could not subscribe you right now. Please try again.');
+  }
+};
 
   // If viewing a single post in detail
-  if (activePost) {
-    const matchedRelated = BLOG_POSTS.filter(post => post.id !== activePost.id).slice(0, 2);
+if (post) {
+
+  const matchedRelated = post.relatedPosts?.length
+  ? posts.filter(
+      (p) => p.id !== post.id && post.relatedPosts?.includes(p.id)
+    )
+  : posts.filter((p) => p.id !== post.id).slice(0, 2);
 
     return (
       <div id="single-blog-reader" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-350">
@@ -72,27 +218,27 @@ export default function BlogView({ onReadBlogPost, activePost, onClosePost }: Bl
             {/* Metadata and Categories */}
             <div className="flex flex-wrap items-center gap-3">
               <span className="bg-sky-50 text-[#1F2A44] font-semibold text-xs px-3 py-1 rounded-full uppercase tracking-wider font-mono">
-                {activePost.category}
+                {post.category}
               </span>
               <div className="flex items-center gap-1.5 text-xs text-slate-400">
                 <Calendar className="w-3.5 h-3.5" />
-                <span>{activePost.date}</span>
+                <span>{post.date}</span>
                 <span>•</span>
                 <Clock className="w-3.5 h-3.5" />
-                <span>{activePost.readTime}</span>
+                <span>{post.readTime}</span>
               </div>
             </div>
 
             {/* Title */}
             <h1 className="text-2xl sm:text-3.5xl lg:text-4xl font-extrabold text-[#1F2A44] leading-tight font-display">
-              {activePost.title}
+              {post.title}
             </h1>
 
             {/* Hero Image */}
             <div className="rounded-2xl overflow-hidden aspect-video border shadow-sm">
               <img 
-                src={activePost.image} 
-                alt={activePost.title} 
+                src={post.image || undefined} 
+                alt={post.title} 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
@@ -103,7 +249,7 @@ export default function BlogView({ onReadBlogPost, activePost, onClosePost }: Bl
               <span className="text-xs text-slate-400 flex items-center gap-1 font-medium">
                 <Tag className="w-3.5 h-3.5" /> Filed under:
               </span>
-              {activePost.tags.map((tag, idx) => (
+              {post.tags.map((tag, idx) => (
                 <span key={idx} className="bg-slate-100 hover:bg-[#4DA6FF]/10 hover:text-[#1F2A44] transition-colors text-slate-600 text-[10px] sm:text-xs px-2.5 py-0.5 rounded-md font-medium">
                   #{tag}
                 </span>
@@ -112,33 +258,44 @@ export default function BlogView({ onReadBlogPost, activePost, onClosePost }: Bl
 
             {/* Styled Rendered Content body */}
             <div className="text-slate-650 space-y-5 text-sm sm:text-base leading-relaxed text-slate-600 border-t border-slate-100 pt-6">
-              {activePost.content.split('\n\n').map((paragraph, pIdx) => {
-                if (paragraph.startsWith('###')) {
-                  return (
-                    <h3 key={pIdx} className="text-lg sm:text-xl font-bold text-[#1F2A44] pt-4 pb-1 font-display flex items-center gap-2">
-                      <span className="w-1 h-5 bg-[#4DA6FF] rounded-full inline-block"></span>
-                      {paragraph.replace('###', '').trim()}
-                    </h3>
-                  );
-                }
-                if (paragraph.startsWith('*')) {
-                  const listItems = paragraph.split('\n');
-                  return (
-                    <ul key={pIdx} className="list-disc pl-6 space-y-2 text-xs sm:text-sm text-slate-550">
-                      {listItems.map((li, liIdx) => (
-                        <li key={liIdx}>{li.replace('*', '').trim()}</li>
-                      ))}
-                    </ul>
-                  );
-                }
-                return (
-                  <p key={pIdx} className="whitespace-pre-line leading-relaxed">
-                    {paragraph}
-                  </p>
-                );
-              })}
+              <PortableText
+  value={post.content}
+  components={portableTextComponents}
+/>
             </div>
+{post.downloadResource?.url && (
+  <div className="my-8 bg-sky-50 border border-sky-100 rounded-2xl p-6">
+    <div className="flex items-start gap-4">
+      
+      <div className="w-11 h-11 rounded-xl bg-[#4DA6FF] text-white flex items-center justify-center shrink-0 text-xl">
+        📥
+      </div>
 
+      <div className="flex-1">
+        <h3 className="text-base font-extrabold text-[#1F2A44]">
+          {post.downloadResource.title || "Download Resource"}
+        </h3>
+
+        {post.downloadResource.description && (
+          <p className="text-sm text-slate-600 mt-1 mb-4">
+            {post.downloadResource.description}
+          </p>
+        )}
+
+        <a
+          href={post.downloadResource.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          download
+          className="inline-flex items-center gap-2 bg-[#1F2A44] text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-[#4DA6FF] transition-all"
+        >
+          📥 Download Now
+        </a>
+      </div>
+
+    </div>
+  </div>
+)}
             {/* AdSense In-feed middle advertisement */}
             <div className="py-6 border-t border-b border-dashed border-slate-150">
               <AdSensePlaceholder slot="infeed" />
@@ -147,14 +304,14 @@ export default function BlogView({ onReadBlogPost, activePost, onClosePost }: Bl
             {/* Author Block */}
             <div id="author-reference" className="bg-slate-50 border border-slate-100 p-6 rounded-2xl flex flex-col sm:flex-row items-center sm:items-start gap-4">
               <img 
-                src={activePost.authorImage} 
-                alt={activePost.author} 
+                src={post.authorImage || undefined}
+                alt={post.author} 
                 className="w-14 h-14 rounded-2xl object-cover border-2 border-[#4DA6FF] shadow-sm shrink-0"
                 referrerPolicy="no-referrer"
               />
               <div className="text-center sm:text-left space-y-1.5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <h4 className="text-sm font-extrabold text-[#1F2A44]">Authored by {activePost.author}</h4>
+                  <h4 className="text-sm font-extrabold text-[#1F2A44]">Authored by {post.author}</h4>
                   <span className="bg-[#1F2A44] text-white px-2.0 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider font-mono inline-block">
                     Founder
                   </span>
@@ -217,13 +374,15 @@ export default function BlogView({ onReadBlogPost, activePost, onClosePost }: Bl
               ) : (
                 <form onSubmit={handleSubscribe} className="space-y-2">
                   <input 
-                    type="email" 
-                    placeholder="name@email.com" 
-                    value={emailSub}
-                    onChange={(e) => setEmailSub(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs focus:border-[#4DA6FF] focus:outline-none placeholder-slate-500"
-                    required
-                  />
+  type="email" 
+  id="newsletter-email"
+  name="email"
+  placeholder="you@domain.com" 
+  value={emailSub}
+  onChange={(e) => setEmailSub(e.target.value)}
+  className="w-full bg-slate-900/95 border border-slate-800 rounded-xl px-3 py-2.5 text-xs focus:border-[#4DA6FF] focus:outline-none placeholder-slate-600 font-sans text-white"
+  required
+/>
                   <button 
                     type="submit" 
                     className="w-full bg-[#4DA6FF] text-slate-900 text-xs font-bold py-2 rounded-xl hover:bg-white transition-all shadow-md"
@@ -301,6 +460,63 @@ export default function BlogView({ onReadBlogPost, activePost, onClosePost }: Bl
             {/* AD BANNER BETWEEN LISTING FILTERS AND FEED */}
             <AdSensePlaceholder slot="header" />
 
+            {/* Featured Posts */}
+{featuredPosts.length > 0 && (
+  <section className="space-y-4">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-[#4DA6FF] font-bold">
+          Editor's Picks
+        </p>
+        <h2 className="text-xl font-extrabold text-[#1F2A44]">
+          Featured Articles
+        </h2>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {featuredPosts.map((featuredPost) => (
+        <article
+          key={featuredPost.id}
+          onClick={() => onReadBlogPost(featuredPost)}
+          className="bg-white border-2 border-[#4DA6FF]/20 p-4 rounded-3xl shadow-premium hover:shadow-2xl transition-all flex flex-col justify-between group cursor-pointer"
+        >
+          <div className="space-y-4">
+            <div className="relative aspect-video rounded-2xl overflow-hidden border">
+              <img
+                src={featuredPost.image || undefined}
+                alt={featuredPost.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                referrerPolicy="no-referrer"
+              />
+
+              <span className="absolute top-2.5 left-2.5 bg-[#1F2A44] text-white text-[9px] uppercase tracking-wider font-mono font-bold px-2.5 py-1 rounded-md shadow-sm">
+                ⭐ Featured
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[10px] text-slate-400 font-medium">
+                {featuredPost.date} • {featuredPost.readTime}
+              </p>
+
+              <h3 className="text-sm sm:text-base font-extrabold text-[#1F2A44] leading-snug group-hover:text-[#4DA6FF] transition-colors">
+                {featuredPost.title}
+              </h3>
+
+              <p className="text-slate-500 text-xs leading-relaxed line-clamp-3">
+                {featuredPost.excerpt}
+              </p>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+)}
+
+{/* Feed Grid */}
+
             {/* Feed Grid */}
             {filteredPosts.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border space-y-3">
@@ -327,9 +543,9 @@ export default function BlogView({ onReadBlogPost, activePost, onClosePost }: Bl
                   >
                     <div className="space-y-4">
                       {/* Image block */}
-                      <div className="relative aspect-video rounded-2xl overflow-hidden border">
+                     <div className="relative aspect-video rounded-2xl overflow-hidden border">
                         <img 
-                          src={post.image} 
+                          src={post.image || undefined}
                           alt={post.title} 
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           referrerPolicy="no-referrer"
@@ -357,7 +573,7 @@ export default function BlogView({ onReadBlogPost, activePost, onClosePost }: Bl
                     <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-4 text-[11px] font-bold text-slate-600 transition-colors group-hover:text-[#4DA6FF]">
                       <span className="flex items-center gap-1.5 pt-0.5">
                         <img 
-                          src={post.authorImage} 
+                          src={post.authorImage || undefined}
                           alt={post.author} 
                           className="w-5 h-5 rounded-full object-cover border"
                           referrerPolicy="no-referrer"
@@ -395,7 +611,7 @@ export default function BlogView({ onReadBlogPost, activePost, onClosePost }: Bl
                     className="flex gap-3 hover:bg-slate-50 p-2 rounded-xl transition-all cursor-pointer group"
                   >
                     <img 
-                      src={post.image} 
+                      src={post.image || undefined}
                       alt={post.title} 
                       className="w-14 h-14 rounded-lg object-cover border shrink-0"
                       referrerPolicy="no-referrer"

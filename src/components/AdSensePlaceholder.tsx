@@ -30,6 +30,9 @@ export default function AdSensePlaceholder({ slot }: AdSensePlaceholderProps) {
 
   const { dimensions, sizeClass, bg } = getSlotDetails();
 
+  if (slot === 'header') {
+  return null;
+}
   return (
     <div 
       id={`adsense-${slot}-placeholder`}
@@ -40,7 +43,7 @@ export default function AdSensePlaceholder({ slot }: AdSensePlaceholderProps) {
         Google AdSense Placeholder
       </div>
       <p className="text-slate-500 text-xs font-semibold select-none">
-        {slot === 'header' ? 'Top Brand Banner Area' : slot === 'sidebar' ? 'Sidebar Ad Block' : 'In-Feed Article Advertisement'}
+        {slot === 'sidebar' ? 'Sidebar Ad Block' : 'In-Feed Article Advertisement'}
       </p>
       <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1 font-mono">
         <AlertCircle className="w-3 h-3 text-slate-300" />

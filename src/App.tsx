@@ -76,7 +76,7 @@ export default function App() {
         return (
           <BlogView 
             onReadBlogPost={handleReadBlogPost} 
-            activePost={activeBlogPost} 
+            post={activeBlogPost}
             onClosePost={handleCloseBlogPost} 
           />
         );

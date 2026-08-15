@@ -1,10 +1,14 @@
-export type CategoryType = 'Tech Skills' | 'Freelancing' | 'Remote Jobs' | 'Digital Tools';
+export type CategoryType =
+  | 'Tech Skills'
+  | 'Freelancing'
+  | 'Remote Jobs'
+  | 'Digital Tools';
 
 export interface BlogPost {
   id: string;
   title: string;
   excerpt: string;
-  content: string; // Markdown or rich text
+  content: any[];
   category: CategoryType;
   author: string;
   authorImage: string;
@@ -12,16 +16,29 @@ export interface BlogPost {
   readTime: string;
   image: string;
   tags: string[];
+
+  downloadResource?: {
+    title: string;
+    description: string;
+    url: string;
+  } | null;
+
+  relatedPosts?: string[];
+
   isFeatured?: boolean;
 }
 
-export type JobCategory = 'Remote Internships' | 'Entry-Level Remote Jobs' | 'Freelancing Platforms' | 'Remote Resources';
+export type JobCategory =
+  | 'Remote Internships'
+  | 'Entry-Level Remote Jobs'
+  | 'Freelancing Platforms'
+  | 'Remote Resources';
 
 export interface JobOpportunity {
   id: string;
   title: string;
   company: string;
-  logo: string; // Initials or design
+  logo: string;
   location: string;
   type: 'Full-time' | 'Part-time' | 'Contract' | 'Internship';
   salary: string;
@@ -36,7 +53,11 @@ export interface FAQItem {
   id: string;
   question: string;
   answer: string;
-  category: 'Tech Education' | 'Freelancing' | 'Remote Jobs' | 'Digital Tools';
+  category:
+    | 'Tech Education'
+    | 'Freelancing'
+    | 'Remote Jobs'
+    | 'Digital Tools';
 }
 
 export interface ReviewItem {

@@ -1,28 +1,87 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, HelpCircle, Compass, ChevronDown, BookOpen, Briefcase, Award, ShieldAlert } from 'lucide-react';
-import { FAQ_ITEMS } from '../data';
 import AdSensePlaceholder from './AdSensePlaceholder';
+import { client } from '../lib/sanity';
+const FAQ_QUERY = `*[_type == "faqGroup"] | order(_createdAt asc) {
+  _id,
+  title,
+  category,
+  "article": article->{
+    _id,
+    title,
+    "slug": slug.current
+  },
+  faqs[]{
+    question,
+    answer
+  }
+}`;
 
 type FAQCategory = 'All' | 'Tech Education' | 'Freelancing' | 'Remote Jobs' | 'Digital Tools';
 
 export default function FAQView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<FAQCategory>('All');
+  const [faqs, setFaqs] = useState<any[]>([]);
   const [openIds, setOpenIds] = useState<Record<string, boolean>>({
     'faq-1': true // First FAQ open by default
   });
+  useEffect(() => {
+  async function fetchFaqs() {
+    try {
+      const data = await client.fetch(FAQ_QUERY);
 
+      const flattenedFaqs = data.flatMap((group: any) =>
+        (group.faqs || []).map((faq: any, index: number) => ({
+          id: `${group._id}-${index}`,
+          question: faq.question,
+          answer: faq.answer,
+          category: group.category,
+          groupId: group._id,
+          groupTitle: group.title,
+          article: group.article,
+        }))
+      );
+
+      setFaqs(flattenedFaqs);
+    } catch (error) {
+      console.error('Sanity FAQ Error:', error);
+    }
+  }
+
+  fetchFaqs();
+}, []);
   const categories: FAQCategory[] = ['All', 'Tech Education', 'Freelancing', 'Remote Jobs', 'Digital Tools'];
 
-  const filteredFaqs = useMemo(() => {
-    return FAQ_ITEMS.filter((item) => {
-      const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
-      const matchesSearch = 
-        item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.answer.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [activeCategory, searchQuery]);
+  const filteredGroups = useMemo(() => {
+  const groups = new Map<string, any>();
+
+  faqs.forEach((item) => {
+    const matchesCategory =
+      activeCategory === 'All' || item.category === activeCategory;
+
+    const matchesSearch =
+      item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.groupTitle?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (matchesCategory && matchesSearch) {
+      if (!groups.has(item.groupId)) {
+        groups.set(item.groupId, {
+          id: item.groupId,
+          title: item.groupTitle,
+          category: item.category,
+          article: item.article,
+          questions: [],
+        });
+      }
+
+      groups.get(item.groupId).questions.push(item);
+    }
+  });
+
+  return Array.from(groups.values());
+}, [faqs, activeCategory, searchQuery]);
 
   const toggleFaq = (id: string) => {
     setOpenIds(prev => ({
@@ -123,74 +182,125 @@ export default function FAQView() {
 
           </div>
 
-          {/* FAQ Accordion List */}
-          {filteredFaqs.length === 0 ? (
-            <div className="bg-white border rounded-2xl p-12 text-center space-y-3">
-              <HelpCircle className="w-12 h-12 text-slate-300 mx-auto animate-bounce" />
-              <h3 className="font-display font-extrabold text-slate-800 text-base">No Matching Answers Left</h3>
-              <p className="text-slate-400 text-xs text-slate-400">
-                Try typing a broader keyword or resetting category selectors.
-              </p>
-              <button 
-                onClick={() => { setSearchQuery(''); setActiveCategory('All'); }}
-                className="bg-slate-100 text-[#1F2A44] font-semibold text-xs px-4 py-2 rounded-xl"
-              >
-                Clear Search Fields
-              </button>
+          {/* FAQ Groups */}
+{filteredGroups.length === 0 ? (
+  <div className="bg-white border rounded-2xl p-12 text-center space-y-3">
+    <HelpCircle className="w-12 h-12 text-slate-300 mx-auto animate-bounce" />
+
+    <h3 className="font-display font-extrabold text-slate-800 text-base">
+      No Matching Answers Left
+    </h3>
+
+    <p className="text-slate-400 text-xs">
+      Try typing a broader keyword or resetting category selectors.
+    </p>
+
+    <button
+      onClick={() => {
+        setSearchQuery('');
+        setActiveCategory('All');
+      }}
+      className="bg-slate-100 text-[#1F2A44] font-semibold text-xs px-4 py-2 rounded-xl"
+    >
+      Clear Search Fields
+    </button>
+  </div>
+) : (
+  <div className="space-y-6">
+    {filteredGroups.map((group: any) => {
+      return (
+        <div
+          key={group.id}
+          className="bg-white border rounded-3xl overflow-hidden shadow-premium"
+        >
+
+          {/* FAQ GROUP HEADER */}
+          <div className="bg-[#1F2A44] text-white p-6">
+            <div className="flex items-center gap-3">
+              <BookOpen className="w-5 h-5 text-[#4DA6FF]" />
+
+              <div>
+                <h2 className="text-base sm:text-lg font-extrabold">
+                  {group.title}
+                </h2>
+
+                <p className="text-xs text-slate-300 mt-1">
+                  {group.category}
+                </p>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredFaqs.map((item) => {
-                const isOpen = !!openIds[item.id];
-                return (
-                  <div 
-                    key={item.id}
-                    id={`faq-accordion-row-${item.id}`}
-                    className="bg-white border rounded-2xl overflow-hidden shadow-premium transition-all hover:border-[#4DA6FF]/15"
+          </div>
+
+          {/* QUESTIONS INSIDE THIS GROUP */}
+          <div className="divide-y divide-slate-100">
+            {group.questions.map((item: any, index: number) => {
+              const faqId = item.id;
+              const isOpen = !!openIds[faqId];
+
+              return (
+                <div key={faqId}>
+
+                  {/* QUESTION */}
+                  <button
+                    onClick={() => toggleFaq(faqId)}
+                    className="w-full flex items-center justify-between p-5 text-left font-bold text-xs sm:text-sm text-slate-800 hover:bg-slate-50 transition-colors"
                   >
-                    
-                    {/* Accordion heading */}
-                    <button
-                      onClick={() => toggleFaq(item.id)}
-                      className="w-full flex items-center justify-between p-5 text-left font-bold text-xs sm:text-sm text-slate-800 focus:outline-none group"
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="shrink-0">
-                          {getCategoryIcon(item.category)}
-                        </span>
-                        <span>
-                          {renderHighlightedText(item.question, searchQuery)}
-                        </span>
+                    <span className="flex items-center gap-3">
+                      <span className="shrink-0 bg-sky-50 text-[#4DA6FF] w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-xs">
+                        {index + 1}
                       </span>
-                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                    </button>
 
-                    {/* Accordion content */}
-                    {isOpen && (
-                      <div className="p-6 pt-0 text-xs sm:text-sm text-slate-600 border-t border-slate-55 bg-slate-50/30 leading-relaxed max-w-none">
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-4 pt-4">
-                          <div className="shrink-0 bg-sky-50 text-[#4DA6FF] w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-xs">
-                            A
-                          </div>
-                          <div>
-                            <p className="text-xs sm:text-sm text-slate-600 font-sans">
-                              {renderHighlightedText(item.answer, searchQuery)}
-                            </p>
-                            
-                            {/* Meta category label inside card */}
-                            <span className="inline-flex items-center gap-1 mt-4 text-[9px] font-bold font-mono tracking-wider text-slate-400 uppercase">
-                              curated channel: {item.category}
-                            </span>
-                          </div>
+                      <span>
+                        {renderHighlightedText(
+                          item.question,
+                          searchQuery
+                        )}
+                      </span>
+                    </span>
+
+                    <ChevronDown
+                      className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${
+                        isOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {/* ANSWER */}
+                  {isOpen && (
+                    <div className="px-6 pb-6 pt-1 bg-slate-50/40">
+                      <div className="flex gap-4">
+
+                        <div className="shrink-0 bg-sky-50 text-[#4DA6FF] w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-xs">
+                          A
                         </div>
-                      </div>
-                    )}
 
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                        <div>
+                          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                            {renderHighlightedText(
+                              item.answer,
+                              searchQuery
+                            )}
+                          </p>
+
+                          <span className="inline-flex items-center gap-1 mt-4 text-[9px] font-bold font-mono tracking-wider text-slate-400 uppercase">
+                            curated channel: {group.category}
+                          </span>
+                        </div>
+
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      );
+    })}
+  </div>
+)}
 
           {/* AdSense Infeed Slot */}
           <div className="pt-4">
