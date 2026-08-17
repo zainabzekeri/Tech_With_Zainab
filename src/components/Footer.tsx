@@ -10,22 +10,44 @@ export default function Footer({ onNavigate }: FooterProps) {
   const [subscribed, setSubscribed] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubscribe = (e: FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address.');
-      return;
-    }
+ const handleSubscribe = async (e: FormEvent) => {
+  e.preventDefault();
+
+  if (!email || !email.includes('@')) {
+    setError('Please enter a valid email address.');
+    return;
+  }
+
+  try {
     setError('');
+
+    const response = await fetch('/.netlify/functions/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Subscription failed');
+    }
+
     setSubscribed(true);
     setEmail('');
-    
-    // Auto reset state after 4 seconds
+
     setTimeout(() => {
       setSubscribed(false);
     }, 5000);
-  };
-
+  } catch (error) {
+    console.error('Newsletter subscription error:', error);
+    setError('Sorry, we could not subscribe you right now. Please try again.');
+  }
+};
   return (
     <footer id="global-footer" className="bg-[#1F2A44] text-slate-300 pt-16 pb-8 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
