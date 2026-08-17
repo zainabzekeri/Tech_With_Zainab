@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, FormEvent } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import type { SubmitEvent } from 'react';
 import { Search, Compass, BookOpen, Clock, ArrowRight, User, Calendar, Tag, ArrowLeft, Mail, ShieldAlert } from 'lucide-react';
 import { BlogPost, CategoryType } from '../types';
 import AdSensePlaceholder from './AdSensePlaceholder';
@@ -148,7 +149,7 @@ const featuredPosts = useMemo(() => {
   return posts.filter((post) => post.isFeatured);
 }, [posts]);
 
-  const handleSubscribe = async (e: FormEvent) => {
+  const handleSubscribe = async (e: SubmitEvent) => {
   e.preventDefault();
 
   if (!emailSub || !emailSub.includes('@')) {
