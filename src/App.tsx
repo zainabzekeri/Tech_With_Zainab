@@ -104,6 +104,14 @@ export default function App() {
         view={currentView} 
         subTitle={activeBlogPost?.title} 
         description={activeBlogPost?.excerpt} 
+        image={activeBlogPost?.featuredImage?.asset?.url}
+        ogTitle={activeBlogPost?.ogTitle}
+        ogDescription={activeBlogPost?.ogDescription}
+        ogImage={activeBlogPost?.ogImage?.asset?.url}
+        twitterTitle={activeBlogPost?.twitterTitle}
+        twitterDescription={activeBlogPost?.twitterDescription}
+        twitterImage={activeBlogPost?.twitterImage?.asset?.url}
+        imageAlt={activeBlogPost?.featuredImage?.alt}
       />
 
       {/* Sticky Universal Header */}

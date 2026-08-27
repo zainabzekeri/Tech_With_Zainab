@@ -59,8 +59,56 @@ const portableTextComponents: PortableTextComponents = {
         </div>
       );
     },
+
+    table: ({ value }) => {
+      if (!value?.rows?.length) return null;
+
+      return (
+        <div className="my-8 overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+          {value.title && (
+            <h3 className="bg-slate-50 px-5 py-4 text-base font-extrabold text-[#1F2A44] border-b border-slate-200">
+              {value.title}
+            </h3>
+          )}
+
+          <table className="w-full min-w-[650px] border-collapse text-sm">
+            <tbody>
+              {value.rows.map((row: any, rowIndex: number) => (
+                <tr
+                  key={rowIndex}
+                  className={
+                    rowIndex === 0
+                      ? 'bg-[#1F2A44] text-white'
+                      : 'border-t border-slate-200'
+                  }
+                >
+                  {row.cells?.map((cell: string, cellIndex: number) =>
+                    rowIndex === 0 ? (
+                      <th
+                        key={cellIndex}
+                        className="px-4 py-3 text-left font-bold"
+                      >
+                        {cell}
+                      </th>
+                    ) : (
+                      <td
+                        key={cellIndex}
+                        className="px-4 py-3 text-slate-600"
+                      >
+                        {cell}
+                      </td>
+                    )
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    },
   },
 };
+
 
 interface BlogViewProps {
   onReadBlogPost: (post: BlogPost) => void;

@@ -15,6 +15,28 @@ export interface BlogPost {
   date: string;
   readTime: string;
   image: string;
+  featuredImage?: {
+    asset?: {
+      url?: string;
+    };
+    alt?: string;
+  };
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: {
+    asset?: {
+      url?: string;
+    };
+    alt?: string;
+  };
+twitterTitle?: string;
+twitterDescription?: string;
+twitterImage?: {
+  asset?: {
+    url?: string;
+  };
+  alt?: string;
+};
   tags: string[];
 
   downloadResource?: {

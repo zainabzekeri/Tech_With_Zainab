@@ -4,9 +4,17 @@ interface SEOHeadProps {
   view: string;
   subTitle?: string;
   description?: string;
+  image?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  imageAlt?: string;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  twitterImage?: string;
 }
 
-export default function SEOHead({ view, subTitle, description }: SEOHeadProps) {
+export default function SEOHead({ view, subTitle, description, image, ogTitle, ogDescription, ogImage, imageAlt,twitterTitle, twitterDescription, twitterImage }: SEOHeadProps) {
   useEffect(() => {
     // Determine title
     let title = "TechWithZainab - Start Your Tech Journey With Confidence";
@@ -57,7 +65,7 @@ export default function SEOHead({ view, subTitle, description }: SEOHeadProps) {
       ogTitleTag.setAttribute('property', 'og:title');
       document.head.appendChild(ogTitleTag);
     }
-    ogTitleTag.setAttribute('content', title);
+    ogTitleTag.setAttribute('content', ogTitle || title);
 
     let ogDescTag = document.querySelector('meta[property="og:description"]');
     if (!ogDescTag) {
@@ -65,7 +73,7 @@ export default function SEOHead({ view, subTitle, description }: SEOHeadProps) {
       ogDescTag.setAttribute('property', 'og:description');
       document.head.appendChild(ogDescTag);
     }
-    ogDescTag.setAttribute('content', metaDesc);
+    ogDescTag.setAttribute('content', ogDescription || metaDesc);
 
     let ogImageTag = document.querySelector('meta[property="og:image"]');
     if (!ogImageTag) {
@@ -73,9 +81,59 @@ export default function SEOHead({ view, subTitle, description }: SEOHeadProps) {
       ogImageTag.setAttribute('property', 'og:image');
       document.head.appendChild(ogImageTag);
     }
-    ogImageTag.setAttribute('content', 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800');
+    ogImageTag.setAttribute('content', ogImage || image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800');
 
-  }, [view, subTitle, description]);
+    // Set Twitter/X tags
+    let twitterCardTag = document.querySelector('meta[name="twitter:card"]');
+    if (!twitterCardTag) {
+      twitterCardTag = document.createElement('meta');
+      twitterCardTag.setAttribute('name', 'twitter:card');
+      document.head.appendChild(twitterCardTag);
+    }
+    twitterCardTag.setAttribute('content', 'summary_large_image');
+
+    let twitterTitleTag = document.querySelector('meta[name="twitter:title"]');
+    if (!twitterTitleTag) {
+      twitterTitleTag = document.createElement('meta');
+      twitterTitleTag.setAttribute('name', 'twitter:title');
+      document.head.appendChild(twitterTitleTag);
+    }
+    twitterTitleTag.setAttribute('content', twitterTitle || ogTitle || title);
+
+    let twitterDescriptionTag = document.querySelector('meta[name="twitter:description"]');
+    if (!twitterDescriptionTag) {
+      twitterDescriptionTag = document.createElement('meta');
+      twitterDescriptionTag.setAttribute('name', 'twitter:description');
+      document.head.appendChild(twitterDescriptionTag);
+    }
+    twitterDescriptionTag.setAttribute('content', twitterDescription || ogDescription || metaDesc);
+
+    let twitterImageTag = document.querySelector('meta[name="twitter:image"]');
+    if (!twitterImageTag) {
+      twitterImageTag = document.createElement('meta');
+      twitterImageTag.setAttribute('name', 'twitter:image');
+      document.head.appendChild(twitterImageTag);
+    }
+    twitterImageTag.setAttribute(
+      'content', twitterImage || ogImage || image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=800'
+    );
+    let twitterImageAltTag = document.querySelector('meta[name="twitter:image:alt"]');
+    if (!twitterImageAltTag) {
+      twitterImageAltTag = document.createElement('meta');
+      twitterImageAltTag.setAttribute('name', 'twitter:image:alt');
+      document.head.appendChild(twitterImageAltTag);
+    }
+    twitterImageAltTag.setAttribute('content', imageAlt || '');
+
+    let ogImageAltTag = document.querySelector('meta[property="og:image:alt"]');
+    if (!ogImageAltTag) {
+      ogImageAltTag = document.createElement('meta');
+      ogImageAltTag.setAttribute('property', 'og:image:alt');
+      document.head.appendChild(ogImageAltTag);
+    }
+    ogImageAltTag.setAttribute('content', imageAlt || '');
+
+  }, [view, subTitle, description, image, ogTitle, ogDescription, ogImage, imageAlt,twitterTitle, twitterDescription, twitterImage]);
 
   return null; // Side-effect component, returns nothing to view
 }

@@ -20,8 +20,25 @@ export const POSTS_QUERY = `*[_type == "post"] | order(publishedAt desc){
   },
 
   featuredImage{
-    asset->{
-      url
-    }
-  }
+  asset->{
+    url
+  },
+  alt
+},
+ogTitle,
+ogDescription,
+ogImage{
+  asset->{
+    url
+  },
+  alt
+},
+twitterTitle,
+twitterDescription,
+twitterImage{
+  asset->{
+    url
+  },
+  alt
+}
 }`;
