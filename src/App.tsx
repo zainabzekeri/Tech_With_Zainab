@@ -14,10 +14,20 @@ import { BlogPost } from './types';
 export default function App() {
   const [currentView, setCurrentView] = useState('home');
   const [activeBlogPost, setActiveBlogPost] = useState<BlogPost | null>(null);
+  const [requestedSlug, setRequestedSlug] = useState('');
 
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.toLowerCase().replace('#/', '');
+
+      const [route, slug] = hash.split('/');
+
+    if (route === 'blog' && slug) {
+      setCurrentView('blog');
+      setRequestedSlug(slug);
+
+      return;
+    }
       const validViews = [
         'home', 
         'about', 
@@ -35,6 +45,8 @@ export default function App() {
         // If navigating away from blog, close active article
         if (hash !== 'blog') {
           setActiveBlogPost(null);
+          setRequestedSlug('');
+
         }
       } else if (!hash) {
         setCurrentView('home');
@@ -57,11 +69,10 @@ export default function App() {
   };
 
   const handleReadBlogPost = (post: BlogPost) => {
-    setActiveBlogPost(post);
-    // Explicitly confirm hash is blog
-    window.location.hash = '#/blog';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+   setActiveBlogPost(post);
+   window.location.hash = `#/blog/${post.slug}`;
+   window.scrollTo({ top: 0, behavior: 'smooth' });
+ };
 
   const handleCloseBlogPost = () => {
     setActiveBlogPost(null);
@@ -77,7 +88,9 @@ export default function App() {
           <BlogView 
             onReadBlogPost={handleReadBlogPost} 
             post={activeBlogPost}
-            onClosePost={handleCloseBlogPost} 
+            onClosePost={handleCloseBlogPost}
+            requestedSlug={requestedSlug}
+ 
           />
         );
       case 'remote-jobs':

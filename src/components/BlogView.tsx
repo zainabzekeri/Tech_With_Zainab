@@ -114,9 +114,10 @@ interface BlogViewProps {
   onReadBlogPost: (post: BlogPost) => void;
   post: BlogPost | null;
   onClosePost: () => void;
+  requestedSlug: string;
 }
 
-export default function BlogView({ onReadBlogPost, post, onClosePost }: BlogViewProps) {
+export default function BlogView({ onReadBlogPost, post, onClosePost,   requestedSlug, }: BlogViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | 'All'>('All');
   const [emailSub, setEmailSub] = useState('');
@@ -163,34 +164,35 @@ export default function BlogView({ onReadBlogPost, post, onClosePost }: BlogView
   JSON.stringify(data[0]?.body || "").toLowerCase().includes("competence practice")
 );
 
-      setPosts(
-  data.map((post: any) => ({
-    id: post._id,
-    title: post.title,
-    excerpt: post.excerpt || "",
-    content: post.body,
+      const mappedPosts = data.map((post: any) => ({
+  id: post._id,
+  slug: post.slug?.current || "",
+  title: post.title,
+  excerpt: post.excerpt || "",
+  content: post.body,
 
-    downloadResource: post.downloadResource
-      ? {
-          title: post.downloadResource.title || "",
-          description: post.downloadResource.description || "",
-          url: post.downloadResource.url || "",
-        }
-      : null,
+  downloadResource: post.downloadResource
+    ? {
+        title: post.downloadResource.title || "",
+        description: post.downloadResource.description || "",
+        url: post.downloadResource.url || "",
+      }
+    : null,
 
-    image: post.featuredImage?.asset?.url || "",
-          category: post.category?.trim() || "General",
-          date: post.publishedAt
-            ? new Date(post.publishedAt).toLocaleDateString()
-            : "",
-          readTime: post.readingTime || "5 min read",
-          tags: post.tags || [],
-          author: post.author || "TechWithZainab",
-          authorImage: post.authorImage || "",
-          relatedPosts: post.relatedPosts || [],
-          isFeatured: post.isFeatured || false,
-        }))
-      );
+  image: post.featuredImage?.asset?.url || "",
+  category: post.category?.trim() || "General",
+  date: post.publishedAt
+    ? new Date(post.publishedAt).toLocaleDateString()
+    : "",
+  readTime: post.readingTime || "5 min read",
+  tags: post.tags || [],
+  author: post.author || "TechWithZainab",
+  authorImage: post.authorImage || "",
+  relatedPosts: post.relatedPosts || [],
+  isFeatured: post.isFeatured || false,
+}));
+
+setPosts(mappedPosts);
 
     } catch (error) {
       console.error("Sanity Error:", error);
@@ -199,6 +201,19 @@ export default function BlogView({ onReadBlogPost, post, onClosePost }: BlogView
 
   fetchPosts();
 }, []);
+
+useEffect(() => {
+  if (!requestedSlug || posts.length === 0 || post) return;
+
+  const matchingPost = posts.find(
+    (blogPost) => blogPost.slug === requestedSlug
+  );
+
+  if (matchingPost) {
+    onReadBlogPost(matchingPost);
+  }
+}, [requestedSlug, posts, post, onReadBlogPost]);
+
   const recentPosts = useMemo(() => {
   return posts.slice(0, 3);
 }, [posts]);
