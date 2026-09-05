@@ -1,6 +1,6 @@
-# Robots.txt for TechWithZainab
+# Robots.txt for TechWithZainab Academy
 User-agent: *
 Allow: /
 
 # Sitemap Location
-Sitemap: https://www.techwithzainabacademy.com/sitemap.xml
+Sitemap: https://techwithzainabacademy.com/sitemap.xml
