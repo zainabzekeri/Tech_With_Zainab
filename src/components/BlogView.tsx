@@ -128,15 +128,20 @@ export default function BlogView({ onReadBlogPost, post, onClosePost }: BlogView
   const filteredPosts = useMemo(() => {
   return posts.filter((post) => {
     const matchesCategory =
-  selectedCategory.toLowerCase() === "all" ||
-  post.category?.trim().toLowerCase() === selectedCategory.trim().toLowerCase();
+      selectedCategory.toLowerCase() === "all" ||
+      post.category?.trim().toLowerCase() ===
+        selectedCategory.trim().toLowerCase();
+
+    const searchText = searchQuery.trim().toLowerCase();
+
+    const bodyText = JSON.stringify(post.content || "").toLowerCase();
 
     const matchesSearch =
-      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (post.excerpt || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.tags.some((tag) =>
-        tag.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  (post.excerpt || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+  post.tags.some((tag) =>
+    tag.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
     return matchesCategory && matchesSearch;
   });
@@ -152,6 +157,11 @@ export default function BlogView({ onReadBlogPost, post, onClosePost }: BlogView
       const data = await client.fetch(POSTS_QUERY);
 
       console.log("Sanity data:", data);
+
+      console.log(
+  "SEARCH TEST:",
+  JSON.stringify(data[0]?.body || "").toLowerCase().includes("competence practice")
+);
 
       setPosts(
   data.map((post: any) => ({
