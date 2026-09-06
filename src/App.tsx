@@ -17,65 +17,72 @@ export default function App() {
   const [requestedSlug, setRequestedSlug] = useState('');
 
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.toLowerCase().replace('#/', '');
-
-      const [route, slug] = hash.split('/');
+  const handleRouteChange = () => {
+    const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+    const [route, slug] = path.split('/');
 
     if (route === 'blog' && slug) {
       setCurrentView('blog');
       setRequestedSlug(slug);
-
+      window.scrollTo({ top: 0, behavior: 'instant' });
       return;
     }
-      const validViews = [
-        'home', 
-        'about', 
-        'blog', 
-        'remote-jobs', 
-        'faq', 
-        'contact', 
-        'privacy-policy', 
-        'terms', 
-        'disclaimer'
-      ];
-      
-      if (validViews.includes(hash)) {
-        setCurrentView(hash);
-        // If navigating away from blog, close active article
-        if (hash !== 'blog') {
-          setActiveBlogPost(null);
-          setRequestedSlug('');
 
-        }
-      } else if (!hash) {
-        setCurrentView('home');
+    const validViews = [
+      'home',
+      'about',
+      'blog',
+      'remote-jobs',
+      'faq',
+      'contact',
+      'privacy-policy',
+      'terms',
+      'disclaimer'
+    ];
+
+    if (validViews.includes(route)) {
+      setCurrentView(route);
+
+      if (route !== 'blog') {
         setActiveBlogPost(null);
+        setRequestedSlug('');
       }
-      
-      // Smooth reset scroll position to standard top of screen
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    };
+    } else if (!route) {
+      setCurrentView('home');
+      setActiveBlogPost(null);
+      setRequestedSlug('');
+    }
 
-    // Call on mount to evaluate initial deep link
-    handleHashChange();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
 
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  handleRouteChange();
+
+  window.addEventListener('popstate', handleRouteChange);
+
+  return () => {
+    window.removeEventListener('popstate', handleRouteChange);
+  };
+}, []);
 
   const navigateTo = (view: string) => {
-    window.location.hash = `#/${view}`;
+    window.history.pushState({}, '', `/${view}`);
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   const handleReadBlogPost = (post: BlogPost) => {
    setActiveBlogPost(post);
-   window.location.hash = `#/blog/${post.slug}`;
+   window.history.pushState({}, '', `/blog/${post.slug}`);
+   window.dispatchEvent(new PopStateEvent('popstate'));
    window.scrollTo({ top: 0, behavior: 'smooth' });
- };
+  };
+
 
   const handleCloseBlogPost = () => {
     setActiveBlogPost(null);
+    setRequestedSlug('');
+    window.history.pushState({}, '', '/blog');
+    window.dispatchEvent(new PopStateEvent('popstate'));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
