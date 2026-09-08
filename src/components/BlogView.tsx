@@ -7,6 +7,85 @@ import { client } from '../lib/sanity';
 import { POSTS_QUERY } from '../lib/queries';
 import { PortableText, PortableTextComponents } from '@portabletext/react';
 const portableTextComponents: PortableTextComponents = {
+  block: {
+    h2: ({ children }) => (
+      <h2 className="text-2xl md:text-3xl font-bold mt-10 mb-4">
+        {children}
+      </h2>
+    ),
+
+    h3: ({ children }) => (
+      <h3 className="text-xl md:text-2xl font-bold mt-8 mb-3">
+        {children}
+      </h3>
+    ),
+
+    h4: ({ children }) => (
+      <h4 className="text-lg md:text-xl font-semibold mt-6 mb-2">
+        {children}
+      </h4>
+    ),
+
+    blockquote: ({ children }) => (
+      <blockquote className="border-l-4 pl-4 my-6 italic">
+        {children}
+      </blockquote>
+    ),
+  },
+
+  list: {
+    bullet: ({ children }) => (
+      <ul className="list-disc pl-6 my-5 space-y-2">
+        {children}
+      </ul>
+    ),
+
+    number: ({ children }) => (
+      <ol className="list-decimal pl-6 my-5 space-y-2">
+        {children}
+      </ol>
+    ),
+  },
+
+  listItem: {
+    bullet: ({ children }) => (
+      <li>{children}</li>
+    ),
+
+    number: ({ children }) => (
+      <li>{children}</li>
+    ),
+  },
+
+  marks: {
+    strong: ({ children }) => (
+      <strong className="font-bold">{children}</strong>
+    ),
+
+    em: ({ children }) => (
+      <em>{children}</em>
+    ),
+
+    underline: ({ children }) => (
+      <u>{children}</u>
+    ),
+
+    'strike-through': ({ children }) => (
+      <s>{children}</s>
+    ),
+
+    link: ({ value, children }) => (
+      <a
+        href={value?.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline"
+      >
+        {children}
+      </a>
+    ),
+  },
+
   types: {
     youtube: ({ value }) => {
       if (!value?.url) return null;
@@ -108,7 +187,6 @@ const portableTextComponents: PortableTextComponents = {
     },
   },
 };
-
 
 interface BlogViewProps {
   onReadBlogPost: (post: BlogPost) => void;
