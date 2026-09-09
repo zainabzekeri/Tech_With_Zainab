@@ -133,6 +133,34 @@ export default function SEOHead({ view, subTitle, description, image, ogTitle, o
     }
     ogImageAltTag.setAttribute('content', imageAlt || '');
 
+        // Add Organization structured data for Google
+    const organizationData = {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": "https://techwithzainabacademy.com/#organization",
+      "name": "TechWithZainab Academy",
+      "alternateName": "TechWithZainab",
+      "url": "https://techwithzainabacademy.com/",
+      "description": "TechWithZainab Academy is a beginner-friendly digital learning platform founded by Zainab, helping beginners build digital skills, explore technology, freelancing, remote jobs, and useful digital tools.",
+      "founder": {
+        "@type": "Person",
+        "name": "Zainab"
+      }
+    };
+
+    let organizationScript = document.querySelector(
+      'script[data-seo="organization"]'
+    );
+
+    if (!organizationScript) {
+      organizationScript = document.createElement("script");
+      organizationScript.setAttribute("type", "application/ld+json");
+      organizationScript.setAttribute("data-seo", "organization");
+      document.head.appendChild(organizationScript);
+    }
+
+    organizationScript.textContent = JSON.stringify(organizationData);
+
   }, [view, subTitle, description, image, ogTitle, ogDescription, ogImage, imageAlt,twitterTitle, twitterDescription, twitterImage]);
 
   return null; // Side-effect component, returns nothing to view
