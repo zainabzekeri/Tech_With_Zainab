@@ -87,6 +87,48 @@ const portableTextComponents: PortableTextComponents = {
   },
 
   types: {
+    tip: ({ value }) => {
+  if (!value?.content) return null;
+
+  return (
+    <div className="my-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+      <div className="flex items-start gap-3">
+        <div className="text-2xl shrink-0">💡</div>
+
+        <div>
+          <h3 className="text-base font-extrabold text-[#1F2A44] mb-1">
+            {value.title || 'Tip'}
+          </h3>
+
+          <p className="text-sm text-slate-700 leading-relaxed">
+            {value.content}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+},
+    warning: ({ value }) => {
+  if (!value?.content) return null;
+
+  return (
+    <div className="my-6 rounded-2xl border border-red-200 bg-red-50 p-5">
+      <div className="flex items-start gap-3">
+        <div className="text-2xl shrink-0">⚠️</div>
+
+        <div>
+          <h3 className="text-base font-extrabold text-red-800 mb-1">
+            {value.title || 'Warning'}
+          </h3>
+
+          <p className="text-sm text-red-700 leading-relaxed">
+            {value.content}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+},
     youtube: ({ value }) => {
       if (!value?.url) return null;
 
